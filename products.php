@@ -40,13 +40,26 @@
         <button class="btn btn-outline-primary my-2 my-sm-0" type="submit">Search</button>
     </form>
 
-    <?php
-    require_once 'config.php';
+<?php
+session_start();
+require_once 'config.php';
 
-    function searchProducts($mysqli, $searchTerm)
+class Product
+{
+    private $mysqli;
+
+    public function __construct($mysqli)
     {
-        $query = "SELECT * FROM products WHERE name LIKE '%$searchTerm%'";
-        $result = $mysqli->query($query);
+        $this->mysqli = $mysqli;
+    }
+
+    public function getAllProducts($search = '')
+    {
+        $query = "SELECT * FROM products";
+        if (!empty($search)) {
+            $query .= " WHERE name LIKE '%$search%'";
+        }
+        $result = $this->mysqli->query($query);
 
         $products = array();
 
@@ -58,44 +71,36 @@
 
         return $products;
     }
+}
 
-    if (isset($_GET['search']) && !empty($_GET['search'])) {
-        $searchTerm = $_GET['search'];
-        $products = searchProducts($mysqli, $searchTerm);
-    } else {
-        $query = "SELECT * FROM products";
-        $result = $mysqli->query($query);
+$product = new Product($mysqli);
 
-        $products = array();
+if (isset($_GET['search'])) {
+    $search = $_GET['search'];
+    $products = $product->getAllProducts($search);
+} else {
+    $products = $product->getAllProducts();
+}
 
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $products[] = $row;
-            }
-        }
-    }
-
-    if (!empty($products)) {
-        echo '<div class="row">';
-        foreach ($products as $product) {
-            echo '<div class="col-md-4">';
-            echo '<div class="card h-100">'; 
-            echo '<img src="' . $product['image'] . '" class="card-img-top car-image" alt="' . $product['name'] . '">';
-            echo '<div class="card-body">';
-            echo '<h5 class="card-title">' . $product['name'] . '</h5>';
-            echo '<p class="card-text">$' . number_format($product['price'], 2) . '</p>';
-            echo '<a href="cart.php?action=add&id=' . $product['product_id'] . '" class="btn btn-primary">Add to Cart</a>';
-            echo '</div>';
-            echo '</div>';
-            echo '</div>';
-        }
+if (!empty($products)) {
+    echo '<div class="row">';
+    foreach ($products as $product) {
+        echo '<div class="col-md-4">';
+        echo '<div class="card h-100">';
+        echo '<img src="' . $product['image'] . '" class="card-img-top car-image" alt="' . $product['name'] . '">';
+        echo '<div class="card-body">';
+        echo '<h5 class="card-title">' . $product['name'] . '</h5>';
+        echo '<p class="card-text">$' . number_format($product['price'], 2) . '</p>';
+        echo '<a href="cart.php?action=add&id=' . $product['product_id'] . '" class="btn btn-primary">Add to Cart</a>';
         echo '</div>';
-    } else {
-        echo '<p>No products found.</p>';
+        echo '</div>';
+        echo '</div>';
     }
-
-    $mysqli->close();
-    ?>
+    echo '</div>';
+} else {
+    echo '<p>No products found.</p>';
+}
+?>
 
 </div>
 
